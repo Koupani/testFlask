@@ -41,6 +41,10 @@ def find_path():
         A_classification_side1 = np.loadtxt(accessibility_side1_file, delimiter=',', skiprows=1)
         A_classification_side2 = np.loadtxt(accessibility_side2_file, delimiter=',', skiprows=1)
 
+        # Handle invalid values in accessibility matrices
+        A_classification_side1 = np.nan_to_num(A_classification_side1, nan=0, posinf=0, neginf=0)
+        A_classification_side2 = np.nan_to_num(A_classification_side2, nan=0, posinf=0, neginf=0)
+
         # Combine accessibility matrices to allow paths if either side is accessible
         combined_accessibility = np.maximum(A_classification_side1, A_classification_side2)
 
