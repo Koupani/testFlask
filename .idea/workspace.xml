@@ -5,7 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4586c48b-2f90-43a4-b5f8-e173e89dd9ad" name="Changes" comment="added csv files">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diagonal_table_Side1_MobilityImpaired_v2.csv" beforeDir="false" afterPath="$PROJECT_DIR$/diagonal_table_Side1_MobilityImpaired_v2.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/diagonal_table_Side2_MobilityImpaired_v2.csv" beforeDir="false" afterPath="$PROJECT_DIR$/diagonal_table_Side2_MobilityImpaired_v2.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,7 +83,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741702021005</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="added csv files">
+      <option name="closed" value="true" />
+      <created>1741705060420</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1741705060420</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
