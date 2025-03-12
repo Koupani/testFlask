@@ -189,7 +189,7 @@ def find_path():
             model3 += c3[i][j] == D[i - 1][j - 1] * x3[i][j]
         model3 += pulp.lpSum(c3[i][j] for (i, j) in A_alt) == C3
 
-    if model.status != 1 and model2.status != 1:
+        # Solve the model
         try:
             model3.solve()
         except pulp.PulpSolverError as e:
