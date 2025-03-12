@@ -119,8 +119,6 @@ def find_path():
         # Solve the model
         try:
             model.solve()
-            if model.status != 1:  # 1 means "Optimal"
-                raise Exception("Model1 infeasible")
         except pulp.PulpSolverError as e:
             logger.error(f"Error solving model: {str(e)}")
             return jsonify({"error": f"Solver error: {str(e)}"}), 500
@@ -159,8 +157,6 @@ def find_path():
         # Solve the model
         try:
             model2.solve()
-            if model2.status != 1:  # 1 means "Optimal"
-                raise Exception("Model2 infeasible")
         except pulp.PulpSolverError as e:
             logger.error(f"Error solving model2: {str(e)}")
             return jsonify({"error": f"Solver error: {str(e)}"}), 500
@@ -193,7 +189,7 @@ def find_path():
             model3 += c3[i][j] == D[i - 1][j - 1] * x3[i][j]
         model3 += pulp.lpSum(c3[i][j] for (i, j) in A_alt) == C3
 
-        # Solve the model
+    if model.status != 1 and model2.status != 1:
         try:
             model3.solve()
         except pulp.PulpSolverError as e:
