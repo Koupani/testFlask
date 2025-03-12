@@ -204,9 +204,13 @@ def find_path():
                 path.append(edge_dict[path[-1]])
             return path
 
-        ordered_shortest_path = reconstruct_path(ka, shortest_path_edges) if shortest_path_edges else []
-        ordered_alternative_path = reconstruct_path(ka, alternative_path_edges) if alternative_path_edges else []
-        ordered_second_alternative_path = reconstruct_path(ka, second_alternative_path_edges) if second_alternative_path_edges else []
+        # Reconstruct paths only if the model is feasible
+        ordered_shortest_path = []
+        if pulp.LpStatus[model.status] == "Optimal": ordered_shortest_path = reconstruct_path(ka, shortest_path_edges)
+        ordered_alternative_path = []
+        if pulp.LpStatus[model2.status] == "Optimal": ordered_alternative_path = reconstruct_path(ka, alternative_path_edges)
+        ordered_second_alternative_path = []
+        if pulp.LpStatus[model3.status] == "Optimal": ordered_second_alternative_path = reconstruct_path(ka, second_alternative_path_edges)
 
         speed_mps = 1.38889  # 5 km/h
         total_distance = pulp.value(C) if pulp.LpStatus[model.status] == "Optimal" else float('inf')
