@@ -121,14 +121,20 @@ def find_path():
             model.solve()
         except pulp.PulpSolverError as e:
             logger.error(f"Error solving model: {str(e)}")
-            return jsonify({"error": f"Solver error: {str(e)}"}), 500
+            # If model fails, skip to model3
+            model_status = "Infeasible"
+        else:
+            model_status = pulp.LpStatus[model.status]
 
-        if pulp.LpStatus[model.status] == "Optimal":
+        # Initialize variables for model results
+        C_accessible = float('inf')
+        shortest_path_edges = []
+
+        if model_status == "Optimal":
             C_accessible = pulp.value(C)
             shortest_path_edges = [(i, j) for (i, j) in A if pulp.value(x[i][j]) > 0.5]
         else:
-            C_accessible = float('inf')
-            shortest_path_edges = []
+            logger.info("Model1 is infeasible or failed. Proceeding to model3.")
 
         # Second Optimization: Allow one inaccessible edge but ensure it's shorter than the first solution
         model2 = pulp.LpProblem("Alternative_Path", pulp.LpMinimize)
@@ -159,15 +165,20 @@ def find_path():
             model2.solve()
         except pulp.PulpSolverError as e:
             logger.error(f"Error solving model2: {str(e)}")
-            return jsonify({"error": f"Solver error: {str(e)}"}), 500
+            # If model2 fails, skip to model3
+            model2_status = "Infeasible"
+        else:
+            model2_status = pulp.LpStatus[model2.status]
 
+        # Initialize variables for model2 results
         alternative_path_edges = []
-        if pulp.LpStatus[model2.status] == "Optimal":
+        inaccessible_edges = []
+
+        if model2_status == "Optimal":
             alternative_path_edges = [(i, j) for (i, j) in A_alt if pulp.value(x2[i][j]) > 0.5]
             inaccessible_edges = [(i, j) for (i, j) in alternative_path_edges if combined_accessibility[i - 1][j - 1] == 0]
         else:
-            alternative_path_edges = []
-            inaccessible_edges = []
+            logger.info("Model2 is infeasible or failed. Proceeding to model3.")
 
         # Third Optimization: Allow an inaccessible path when the first and second models are infeasible
         model3 = pulp.LpProblem("Second_Alternative_Path", pulp.LpMinimize)
@@ -200,7 +211,8 @@ def find_path():
         if pulp.LpStatus[model3.status] == "Optimal":
             second_alternative_path_edges = [(i, j) for (i, j) in A_alt if pulp.value(x3[i][j]) > 0.5]
         else:
-            second_alternative_path_edges = []
+            logger.error("Model3 is also infeasible or failed. No valid paths found.")
+            return jsonify({"error": "No valid paths found for the given constraints"}), 400
 
         # Function to reconstruct ordered path
         def reconstruct_path(start, edges):
@@ -212,16 +224,21 @@ def find_path():
 
         # Reconstruct paths only if the model is feasible
         ordered_shortest_path = []
-        if pulp.LpStatus[model.status] == "Optimal": ordered_shortest_path = reconstruct_path(ka, shortest_path_edges)
+        if model_status == "Optimal":
+            ordered_shortest_path = reconstruct_path(ka, shortest_path_edges)
+
         ordered_alternative_path = []
-        if pulp.LpStatus[model2.status] == "Optimal": ordered_alternative_path = reconstruct_path(ka, alternative_path_edges)
+        if model2_status == "Optimal":
+            ordered_alternative_path = reconstruct_path(ka, alternative_path_edges)
+
         ordered_second_alternative_path = []
-        if pulp.LpStatus[model3.status] == "Optimal": ordered_second_alternative_path = reconstruct_path(ka, second_alternative_path_edges)
+        if pulp.LpStatus[model3.status] == "Optimal":
+            ordered_second_alternative_path = reconstruct_path(ka, second_alternative_path_edges)
 
         speed_mps = 1.38889  # 5 km/h
-        total_distance = pulp.value(C) if pulp.LpStatus[model.status] == "Optimal" else float('inf')
+        total_distance = pulp.value(C) if model_status == "Optimal" else float('inf')
         total_time = total_distance / speed_mps if total_distance != float('inf') else float('inf')
-        total_distance_alternative = pulp.value(C2) if pulp.LpStatus[model2.status] == "Optimal" else float('inf')
+        total_distance_alternative = pulp.value(C2) if model2_status == "Optimal" else float('inf')
         total_time_alternative = total_distance_alternative / speed_mps if total_distance_alternative != float('inf') else float('inf')
         total_distance_second_alternative = pulp.value(C3) if pulp.LpStatus[model3.status] == "Optimal" else float('inf')
         total_time_second_alternative = total_distance_second_alternative / speed_mps if total_distance_second_alternative != float('inf') else float('inf')
