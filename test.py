@@ -1,11 +1,15 @@
 from flask import Flask, request, jsonify
 import numpy as np
 import os
-import pulp  # Use PuLP instead of Gurobi
+import pulp
 from flask_cors import CORS
+import logging
 
 app = Flask(__name__)
 CORS(app)
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 @app.route('/api/find_path', methods=['POST'])
 def find_path():
@@ -34,7 +38,7 @@ def find_path():
             accessibility_side1_file = os.path.join(BASE_PATH, 'diagonal_table_Side1_VisuallyImpaired_v2.csv')
             accessibility_side2_file = os.path.join(BASE_PATH, 'diagonal_table_Side2_VisuallyImpaired_v2.csv')
         else:
-            return jsonify({"error": "Invalid mode specified"}), 400  # Handle invalid mode
+            return jsonify({"error": "Invalid mode specified"}), 400
 
         # Load Data
         D = np.loadtxt(distances_file, delimiter=',', skiprows=1)
@@ -45,14 +49,18 @@ def find_path():
         A_classification_side1 = np.nan_to_num(A_classification_side1, nan=0, posinf=0, neginf=0)
         A_classification_side2 = np.nan_to_num(A_classification_side2, nan=0, posinf=0, neginf=0)
 
-        # Combine accessibility matrices to allow paths if either side is accessible
+        # Combine accessibility matrices
         combined_accessibility = np.maximum(A_classification_side1, A_classification_side2)
 
         # Ensure shapes match
         if D.shape != A_classification_side1.shape or D.shape != A_classification_side2.shape:
             raise ValueError("Distances matrix and Accessibility matrix dimensions must match.")
 
-        # Accessible distances only (filter inaccessible paths in D)
+        # Check if there are any accessible paths
+        if np.sum(combined_accessibility) == 0:
+            return jsonify({"error": "No accessible paths found for the given mode"}), 400
+
+        # Accessible distances only
         accessible_D = np.where(combined_accessibility > 0, D, 0)
 
         # Read node positions from .xyz file
@@ -103,7 +111,11 @@ def find_path():
         model += pulp.lpSum(c[i][j] for (i, j) in A) == C  # Total cost
 
         # Solve the model
-        model.solve()
+        try:
+            model.solve()
+        except pulp.PulpSolverError as e:
+            logger.error(f"Error solving model: {str(e)}")
+            return jsonify({"error": f"Solver error: {str(e)}"}), 500
 
         if pulp.LpStatus[model.status] == "Optimal":
             C_accessible = pulp.value(C)
@@ -137,7 +149,11 @@ def find_path():
         model2 += C2 <= C_accessible
 
         # Solve the model
-        model2.solve()
+        try:
+            model2.solve()
+        except pulp.PulpSolverError as e:
+            logger.error(f"Error solving model2: {str(e)}")
+            return jsonify({"error": f"Solver error: {str(e)}"}), 500
 
         alternative_path_edges = []
         if pulp.LpStatus[model2.status] == "Optimal":
@@ -168,7 +184,11 @@ def find_path():
         model3 += pulp.lpSum(c3[i][j] for (i, j) in A_alt) == C3
 
         # Solve the model
-        model3.solve()
+        try:
+            model3.solve()
+        except pulp.PulpSolverError as e:
+            logger.error(f"Error solving model3: {str(e)}")
+            return jsonify({"error": f"Solver error: {str(e)}"}), 500
 
         second_alternative_path_edges = []
         if pulp.LpStatus[model3.status] == "Optimal":
@@ -222,13 +242,13 @@ def find_path():
             "total_time_second_alternative": round(total_time_second_alternative, 2) if total_time_second_alternative != float('inf') else None
         }
         response = replace_infinity(response)
-        print(response)
+        logger.debug(f"Response: {response}")
 
         return jsonify(response)
 
     except Exception as e:
-        return jsonify({"error": str(e)})
-
+        logger.error(f"Unexpected error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=False)
