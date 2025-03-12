@@ -58,7 +58,7 @@ def find_path():
 
         # Check if there are any accessible paths
         if np.sum(combined_accessibility) == 0:
-            return jsonify({"error": "No accessible paths found for the given mode"}), 400
+            return jsonify({"error": f"No accessible paths found for mode: {mode}"}), 400
 
         # Accessible distances only
         accessible_D = np.where(combined_accessibility > 0, D, 0)
@@ -110,20 +110,6 @@ def find_path():
             model += c[i][j] == accessible_D[i - 1][j - 1] * x[i][j]  # Cost definition
         model += pulp.lpSum(c[i][j] for (i, j) in A) == C  # Total cost
 
-        # Solve the model
-        try:
-            model.solve()
-        except pulp.PulpSolverError as e:
-            logger.error(f"Error solving model: {str(e)}")
-            return jsonify({"error": f"Solver error: {str(e)}"}), 500
-
-        if pulp.LpStatus[model.status] == "Optimal":
-            C_accessible = pulp.value(C)
-            shortest_path_edges = [(i, j) for (i, j) in A if pulp.value(x[i][j]) > 0.5]
-        else:
-            C_accessible = float('inf')
-            shortest_path_edges = []
-
         # Second Optimization: Allow one inaccessible edge but ensure it's shorter than the first solution
         model2 = pulp.LpProblem("Alternative_Path", pulp.LpMinimize)
 
@@ -148,21 +134,6 @@ def find_path():
         model2 += pulp.lpSum(c2[i][j] for (i, j) in A_alt) == C2
         model2 += C2 <= C_accessible
 
-        # Solve the model
-        try:
-            model2.solve()
-        except pulp.PulpSolverError as e:
-            logger.error(f"Error solving model2: {str(e)}")
-            return jsonify({"error": f"Solver error: {str(e)}"}), 500
-
-        alternative_path_edges = []
-        if pulp.LpStatus[model2.status] == "Optimal":
-            alternative_path_edges = [(i, j) for (i, j) in A_alt if pulp.value(x2[i][j]) > 0.5]
-            inaccessible_edges = [(i, j) for (i, j) in alternative_path_edges if combined_accessibility[i - 1][j - 1] == 0]
-        else:
-            alternative_path_edges = []
-            inaccessible_edges = []
-
         # Third Optimization: Allow an inaccessible path when the first and second models are infeasible
         model3 = pulp.LpProblem("Second_Alternative_Path", pulp.LpMinimize)
 
@@ -183,52 +154,44 @@ def find_path():
             model3 += c3[i][j] == D[i - 1][j - 1] * x3[i][j]
         model3 += pulp.lpSum(c3[i][j] for (i, j) in A_alt) == C3
 
-        # Solve the model
+        # Solve models with fallback logic
         try:
-            model3.solve()
-        except pulp.PulpSolverError as e:
-            logger.error(f"Error solving model3: {str(e)}")
-            return jsonify({"error": f"Solver error: {str(e)}"}), 500
+            # Solve model1
+            model.solve()
+            if model.status != 1:  # 1 means "Optimal"
+                raise Exception("Model1 infeasible")
 
-        second_alternative_path_edges = []
-        if pulp.LpStatus[model3.status] == "Optimal":
-            second_alternative_path_edges = [(i, j) for (i, j) in A_alt if pulp.value(x3[i][j]) > 0.5]
-        else:
-            second_alternative_path_edges = []
+            # Solve model2
+            model2.solve()
+            if model2.status != 1:
+                raise Exception("Model2 infeasible")
 
-        # Function to reconstruct ordered path
-        def reconstruct_path(start, edges):
-            path = [start]
-            edge_dict = {i: j for i, j in edges}
-            while path[-1] in edge_dict:
-                path.append(edge_dict[path[-1]])
-            return path
+        except (pulp.PulpSolverError, Exception) as e:
+            logger.error(f"Error encountered: {e}")
+            logger.info("Solving model3 as fallback...")
+            model3.solve()  # Always feasible
 
-        # Reconstruct paths only if the model is feasible
+        # Reconstruct paths based on which models were solved
         ordered_shortest_path = []
-        if pulp.LpStatus[model.status] == "Optimal": ordered_shortest_path = reconstruct_path(ka, shortest_path_edges)
+        if model.status == 1:
+            ordered_shortest_path = reconstruct_path(ka, [(i, j) for (i, j) in A if pulp.value(x[i][j]) > 0.5])
+
         ordered_alternative_path = []
-        if pulp.LpStatus[model2.status] == "Optimal": ordered_alternative_path = reconstruct_path(ka, alternative_path_edges)
+        if model2.status == 1:
+            ordered_alternative_path = reconstruct_path(ka, [(i, j) for (i, j) in A_alt if pulp.value(x2[i][j]) > 0.5])
+
         ordered_second_alternative_path = []
-        if pulp.LpStatus[model3.status] == "Optimal": ordered_second_alternative_path = reconstruct_path(ka, second_alternative_path_edges)
+        if model3.status == 1:
+            ordered_second_alternative_path = reconstruct_path(ka, [(i, j) for (i, j) in A_alt if pulp.value(x3[i][j]) > 0.5])
 
+        # Calculate total distance and time
         speed_mps = 1.38889  # 5 km/h
-        total_distance = pulp.value(C) if pulp.LpStatus[model.status] == "Optimal" else float('inf')
+        total_distance = pulp.value(C) if model.status == 1 else float('inf')
         total_time = total_distance / speed_mps if total_distance != float('inf') else float('inf')
-        total_distance_alternative = pulp.value(C2) if pulp.LpStatus[model2.status] == "Optimal" else float('inf')
+        total_distance_alternative = pulp.value(C2) if model2.status == 1 else float('inf')
         total_time_alternative = total_distance_alternative / speed_mps if total_distance_alternative != float('inf') else float('inf')
-        total_distance_second_alternative = pulp.value(C3) if pulp.LpStatus[model3.status] == "Optimal" else float('inf')
+        total_distance_second_alternative = pulp.value(C3) if model3.status == 1 else float('inf')
         total_time_second_alternative = total_distance_second_alternative / speed_mps if total_distance_second_alternative != float('inf') else float('inf')
-
-        def replace_infinity(obj):
-            """Recursively replace infinity values with a large number or null."""
-            if isinstance(obj, float) and (obj == float("inf") or obj == float("-inf")):
-                return None
-            elif isinstance(obj, list):
-                return [replace_infinity(item) for item in obj]
-            elif isinstance(obj, dict):
-                return {key: replace_infinity(value) for key, value in obj.items()}
-            return obj
 
         # Prepare the response
         response = {
@@ -245,8 +208,6 @@ def find_path():
             "total_distance_second_alternative": round(total_distance_second_alternative, 2) if total_distance_second_alternative != float('inf') else None,
             "total_time_second_alternative": round(total_time_second_alternative, 2) if total_time_second_alternative != float('inf') else None
         }
-        response = replace_infinity(response)
-        logger.debug(f"Response: {response}")
 
         return jsonify(response)
 
