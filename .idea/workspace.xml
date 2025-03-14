@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4586c48b-2f90-43a4-b5f8-e173e89dd9ad" name="Changes" comment="extra files" />
+    <list default="true" id="4586c48b-2f90-43a4-b5f8-e173e89dd9ad" name="Changes" comment="removed obstacles">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -175,7 +178,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741944866445</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="removed obstacles">
+      <option name="closed" value="true" />
+      <created>1741945094277</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1741945094277</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -188,6 +199,7 @@
     <MESSAGE value="adjustments" />
     <MESSAGE value="added obstacles for mobilityImpaired" />
     <MESSAGE value="extra files" />
-    <option name="LAST_COMMIT_MESSAGE" value="extra files" />
+    <MESSAGE value="removed obstacles" />
+    <option name="LAST_COMMIT_MESSAGE" value="removed obstacles" />
   </component>
 </project>

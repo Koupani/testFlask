@@ -54,15 +54,15 @@ def find_path():
         D = np.loadtxt(distances_file, delimiter=',', skiprows=1)
         A_classification_side1 = np.loadtxt(accessibility_side1_file, delimiter=',', skiprows=1)
         A_classification_side2 = np.loadtxt(accessibility_side2_file, delimiter=',', skiprows=1)
-        if mode == 'mobilityImpaired':
-            min_pavement_width_side1 = np.loadtxt(min_pavement_width_side1, delimiter=',', skiprows=1)
-            min_pavement_width_side2 = np.loadtxt(min_pavement_width_side2, delimiter=',', skiprows=1)
-            horizontal_slope_side1 = np.loadtxt(horizontal_slope_side1, delimiter=',', skiprows=1)
-            horizontal_slope_side2 = np.loadtxt(horizontal_slope_side2, delimiter=',', skiprows=1)
-            kerb_side1 = np.loadtxt(kerb_side1, delimiter=',', skiprows=1, dtype=str)
-            kerb_side2 = np.loadtxt(kerb_side2, delimiter=',', skiprows=1, dtype=str)
-            max_kerb_slope_side1 = np.loadtxt(max_kerb_slope_side1, delimiter=',', skiprows=1)
-            max_kerb_slope_side2 = np.loadtxt(max_kerb_slope_side2, delimiter=',', skiprows=1)
+        # Load additional data files
+        Min_pavement_width_side1 = np.loadtxt(min_pavement_width_side1, delimiter=',', skiprows=1)
+        Min_pavement_width_side2 = np.loadtxt(min_pavement_width_side2, delimiter=',', skiprows=1)
+        Horizontal_slope_side1 = np.loadtxt(horizontal_slope_side1, delimiter=',', skiprows=1)
+        Horizontal_slope_side2 = np.loadtxt(horizontal_slope_side2, delimiter=',', skiprows=1)
+        Kerb_side1 = np.loadtxt(kerb_side1, delimiter=',', skiprows=1, dtype=str)
+        Kerb_side2 = np.loadtxt(kerb_side2, delimiter=',', skiprows=1, dtype=str)
+        Max_kerb_slope_side1 = np.loadtxt(max_kerb_slope_side1, delimiter=',', skiprows=1)
+        Max_kerb_slope_side2 = np.loadtxt(max_kerb_slope_side2, delimiter=',', skiprows=1)
 
         # Handle invalid values in accessibility matrices
         A_classification_side1 = np.nan_to_num(A_classification_side1, nan=0, posinf=0, neginf=0)
@@ -262,6 +262,27 @@ def find_path():
         total_distance_second_alternative = pulp.value(C3) if pulp.LpStatus[model3.status] == "Optimal" else float('inf')
         total_time_second_alternative = total_distance_second_alternative / speed_mps if total_distance_second_alternative != float('inf') else float('inf')
 
+        # Function to check obstacles for inaccessible edges
+        def check_obstacles(edges):
+            obstacles = {}
+            for (i, j) in edges:
+                reasons = []
+                if Min_pavement_width_side1[i - 1, j - 1] < 150 and Min_pavement_width_side2[i - 1, j - 1] < 150:
+                    reasons.append("Στένωση πεζοδρομίου - Narrow Pavement")
+                if Horizontal_slope_side1[i - 1, j - 1] >= 12 and Horizontal_slope_side2[i - 1, j - 1] >= 12:
+                    reasons.append("Απότομη κατά μήκος κλίση - Steep Horizontal Slope")
+                if Kerb_side1[i - 1, j - 1].strip().lower() != "yes" and Kerb_side2[
+                    i - 1, j - 1].strip().lower() != "yes":
+                    reasons.append("Δεν υπάρχει ράμπα - No Dropped Kerb")
+                if Max_kerb_slope_side1[i - 1, j - 1] >= 5 and Max_kerb_slope_side2[i - 1, j - 1] >= 5:
+                    reasons.append("Απότομη κλίση ράμπας - High Kerb Slope")
+
+                obstacles[(i, j)] = reasons  # Store obstacles for this edge
+            return obstacles
+
+        # Check obstacles for inaccessible edges
+        obstacles = check_obstacles(inaccessible_edges)
+
         def replace_infinity(obj):
             """Recursively replace infinity values with a large number or null."""
             if isinstance(obj, float) and (obj == float("inf") or obj == float("-inf")):
@@ -281,6 +302,7 @@ def find_path():
             "path": [(ordered_shortest_path[i], ordered_shortest_path[i + 1]) for i in range(len(ordered_shortest_path) - 1)] if ordered_shortest_path else [],
             "alternative_path": [(ordered_alternative_path[i], ordered_alternative_path[i + 1]) for i in range(len(ordered_alternative_path) - 1)] if ordered_alternative_path else [],
             "inaccessible_edges": inaccessible_edges,
+            "obstacles": obstacles,
             "second_alternative_path": [(ordered_second_alternative_path[i], ordered_second_alternative_path[i + 1]) for i in range(len(ordered_second_alternative_path) - 1)] if ordered_second_alternative_path else [],
             "total_distance_alternative": round(total_distance_alternative, 2) if total_distance_alternative != float('inf') else None,
             "total_time_alternative": round(total_time_alternative, 2) if total_time_alternative != float('inf') else None,
