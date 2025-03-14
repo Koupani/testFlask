@@ -63,6 +63,8 @@ def find_path():
         Kerb_side2 = np.loadtxt(kerb_side2, delimiter=',', skiprows=1, dtype=str)
         Max_kerb_slope_side1 = np.loadtxt(max_kerb_slope_side1, delimiter=',', skiprows=1)
         Max_kerb_slope_side2 = np.loadtxt(max_kerb_slope_side2, delimiter=',', skiprows=1)
+        Tactile_paving_side1 = np.loadtxt(tactile_paving_side1, delimiter=',', skiprows=1, dtype=str)
+        Tactile_paving_side2 = np.loadtxt(tactile_paving_side2, delimiter=',', skiprows=1, dtype=str)
 
         # Handle invalid values in accessibility matrices
         A_classification_side1 = np.nan_to_num(A_classification_side1, nan=0, posinf=0, neginf=0)
@@ -267,29 +269,44 @@ def find_path():
         total_time_second_alternative = total_distance_second_alternative / speed_mps if total_distance_second_alternative != float('inf') else float('inf')
 
         # Function to check obstacles for inaccessible edges
-        def check_obstacles(edges):
+        def check_obstacles(edges, mode):
             obstacles = {}
             for (i, j) in edges:
                 reasons = []
-                if Min_pavement_width_side1[i - 1, j - 1] < 150 and Min_pavement_width_side2[i - 1, j - 1] < 150:
-                    reasons.append("Στένωση πεζοδρομίου - Narrow Pavement")
-                if Horizontal_slope_side1[i - 1, j - 1] >= 12 and Horizontal_slope_side2[i - 1, j - 1] >= 12:
-                    reasons.append("Απότομη κατά μήκος κλίση - Steep Horizontal Slope")
-                if Kerb_side1[i - 1, j - 1].strip().lower() != "yes" and Kerb_side2[
-                    i - 1, j - 1].strip().lower() != "yes":
-                    reasons.append("Δεν υπάρχει ράμπα - No Dropped Kerb")
-                if Max_kerb_slope_side1[i - 1, j - 1] >= 5 and Max_kerb_slope_side2[i - 1, j - 1] >= 5:
-                    reasons.append("Απότομη κλίση ράμπας - High Kerb Slope")
+
+                # Check min_pavement_width for all modes
+                if mode == 'mobilityImpaired':
+                    if Min_pavement_width_side1[i - 1, j - 1] < 150 and Min_pavement_width_side2[i - 1, j - 1] < 150:
+                        reasons.append("Στένωση πεζοδρομίου - Narrow Pavement")
+                elif mode in ['visuallyImpaired', 'pedestrian']:
+                    if Min_pavement_width_side1[i - 1, j - 1] <= 0 and Min_pavement_width_side2[i - 1, j - 1] <= 0:
+                        reasons.append("Στένωση πεζοδρομίου - Narrow Pavement")
+
+                # Check horizontal_slope, kerb, and max_kerb_slope only for mobilityImpaired
+                if mode == 'mobilityImpaired':
+                    if Horizontal_slope_side1[i - 1, j - 1] >= 12 and Horizontal_slope_side2[i - 1, j - 1] >= 12:
+                        reasons.append("Απότομη κατά μήκος κλίση - Steep Horizontal Slope")
+                    if Kerb_side1[i - 1, j - 1].strip().lower() != "yes" and Kerb_side2[
+                        i - 1, j - 1].strip().lower() != "yes":
+                        reasons.append("Δεν υπάρχει ράμπα - No Dropped Kerb")
+                    if Max_kerb_slope_side1[i - 1, j - 1] >= 5 and Max_kerb_slope_side2[i - 1, j - 1] >= 5:
+                        reasons.append("Απότομη κλίση ράμπας - High Kerb Slope")
+
+                # Check tactile paving only for visuallyImpaired
+                if mode == 'visuallyImpaired':
+                    if Tactile_paving_side1[i - 1, j - 1].strip().lower() != "yes" and Tactile_paving_side2[
+                        i - 1, j - 1].strip().lower() != "yes":
+                        reasons.append("Απουσία Απτικής Επίστρωσης - No Tactile Paving")
 
                 # Use a string key instead of a tuple
                 obstacles[f"{i}-{j}"] = reasons  # Store obstacles for this edge
             return obstacles
 
         # Check obstacles for inaccessible edges
-        obstacles = check_obstacles(inaccessible_edges)
+        obstacles = check_obstacles(inaccessible_edges, mode)
 
         # Check obstacles for inaccessible edges in model3
-        obstacles_model3 = check_obstacles(inaccessible_edges_model3)
+        obstacles_model3 = check_obstacles(inaccessible_edges_model3, mode)
 
         def replace_infinity(obj):
             """Recursively replace infinity values with a large number or null."""
