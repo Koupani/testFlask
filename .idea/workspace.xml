@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4586c48b-2f90-43a4-b5f8-e173e89dd9ad" name="Changes" comment="removed obstacles">
+    <list default="true" id="4586c48b-2f90-43a4-b5f8-e173e89dd9ad" name="Changes" comment="converted obstacles to strings">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
@@ -186,7 +186,23 @@
       <option name="project" value="LOCAL" />
       <updated>1741945094277</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="readded obstacles">
+      <option name="closed" value="true" />
+      <created>1741945891630</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1741945891630</updated>
+    </task>
+    <task id="LOCAL-00017" summary="converted obstacles to strings">
+      <option name="closed" value="true" />
+      <created>1741946181211</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1741946181211</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -200,6 +216,8 @@
     <MESSAGE value="added obstacles for mobilityImpaired" />
     <MESSAGE value="extra files" />
     <MESSAGE value="removed obstacles" />
-    <option name="LAST_COMMIT_MESSAGE" value="removed obstacles" />
+    <MESSAGE value="readded obstacles" />
+    <MESSAGE value="converted obstacles to strings" />
+    <option name="LAST_COMMIT_MESSAGE" value="converted obstacles to strings" />
   </component>
 </project>

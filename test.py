@@ -233,6 +233,10 @@ def find_path():
             logger.error("Model3 is also infeasible or failed. No valid paths found.")
             return jsonify({"error": "No valid paths found for the given constraints"}), 400
 
+        # Identify inaccessible edges for model3
+        inaccessible_edges_model3 = [(i, j) for (i, j) in second_alternative_path_edges if
+                                     combined_accessibility[i - 1][j - 1] == 0]
+
         # Function to reconstruct ordered path
         def reconstruct_path(start, edges):
             path = [start]
@@ -284,6 +288,9 @@ def find_path():
         # Check obstacles for inaccessible edges
         obstacles = check_obstacles(inaccessible_edges)
 
+        # Check obstacles for inaccessible edges in model3
+        obstacles_model3 = check_obstacles(inaccessible_edges_model3)
+
         def replace_infinity(obj):
             """Recursively replace infinity values with a large number or null."""
             if isinstance(obj, float) and (obj == float("inf") or obj == float("-inf")):
@@ -305,6 +312,8 @@ def find_path():
             "inaccessible_edges": inaccessible_edges,
             "obstacles": obstacles,
             "second_alternative_path": [(ordered_second_alternative_path[i], ordered_second_alternative_path[i + 1]) for i in range(len(ordered_second_alternative_path) - 1)] if ordered_second_alternative_path else [],
+            "inaccessible_edges_model3": inaccessible_edges_model3,
+            "obstacles_model3": obstacles_model3,
             "total_distance_alternative": round(total_distance_alternative, 2) if total_distance_alternative != float('inf') else None,
             "total_time_alternative": round(total_time_alternative, 2) if total_time_alternative != float('inf') else None,
             "total_distance_second_alternative": round(total_distance_second_alternative, 2) if total_distance_second_alternative != float('inf') else None,
