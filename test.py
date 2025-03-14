@@ -277,7 +277,8 @@ def find_path():
                 if Max_kerb_slope_side1[i - 1, j - 1] >= 5 and Max_kerb_slope_side2[i - 1, j - 1] >= 5:
                     reasons.append("Απότομη κλίση ράμπας - High Kerb Slope")
 
-                obstacles[(i, j)] = reasons  # Store obstacles for this edge
+                # Use a string key instead of a tuple
+                obstacles[f"{i}-{j}"] = reasons  # Store obstacles for this edge
             return obstacles
 
         # Check obstacles for inaccessible edges
