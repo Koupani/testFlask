@@ -280,7 +280,7 @@ def find_path():
                         reasons.append("Στένωση πεζοδρομίου - Narrow Pavement")
                 elif mode in ['visuallyImpaired', 'pedestrian']:
                     if Min_pavement_width_side1[i - 1, j - 1] <= 0 and Min_pavement_width_side2[i - 1, j - 1] <= 0:
-                        reasons.append("Στένωση πεζοδρομίου - Narrow Pavement")
+                        reasons.append("Απουσία πεζοδρομίου - No Pavement")
 
                 # Check horizontal_slope, kerb, and max_kerb_slope only for mobilityImpaired
                 if mode == 'mobilityImpaired':
