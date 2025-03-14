@@ -193,27 +193,9 @@ def find_path():
         alternative_path_edges = []
         inaccessible_edges = []
 
-        obstacles = {}
         if model2_status == "Optimal":
             alternative_path_edges = [(i, j) for (i, j) in A_alt if pulp.value(x2[i][j]) > 0.5]
             inaccessible_edges = [(i, j) for (i, j) in alternative_path_edges if combined_accessibility[i - 1][j - 1] == 0]
-
-            for (i, j) in alternative_path_edges:
-                reasons = []
-
-                # Check conditions for each edge
-                if min_pavement_width_side1[i - 1, j - 1] < 150 and min_pavement_width_side2[i - 1, j - 1] < 150:
-                    reasons.append("Στένωση πεζοδρομίου - Narrow Pavement")
-                if horizontal_slope_side1[i - 1, j - 1] >= 12 and horizontal_slope_side2[i - 1, j - 1] >= 12:
-                    reasons.append("Απότομη κατά μήκος κλίση - Steep Horizontal Slope")
-                if kerb_side1[i - 1, j - 1].strip().lower() != "yes" and kerb_side2[
-                    i - 1, j - 1].strip().lower() != "yes":
-                    reasons.append("Δεν υπάρχει ράμπα - No Dropped Kerb")
-                if max_kerb_slope_side1[i - 1, j - 1] >= 5 and max_kerb_slope_side2[i - 1, j - 1] >= 5:
-                    reasons.append("Απότομη κλίση ράμπας - High Kerb Slope")
-
-                if reasons:
-                    obstacles[(i, j)] = reasons  # Store obstacles for this edge
         else:
             logger.info("Model2 is infeasible or failed. Proceeding to model3.")
 
@@ -299,7 +281,6 @@ def find_path():
             "path": [(ordered_shortest_path[i], ordered_shortest_path[i + 1]) for i in range(len(ordered_shortest_path) - 1)] if ordered_shortest_path else [],
             "alternative_path": [(ordered_alternative_path[i], ordered_alternative_path[i + 1]) for i in range(len(ordered_alternative_path) - 1)] if ordered_alternative_path else [],
             "inaccessible_edges": inaccessible_edges,
-            "obstacles": obstacles,
             "second_alternative_path": [(ordered_second_alternative_path[i], ordered_second_alternative_path[i + 1]) for i in range(len(ordered_second_alternative_path) - 1)] if ordered_second_alternative_path else [],
             "total_distance_alternative": round(total_distance_alternative, 2) if total_distance_alternative != float('inf') else None,
             "total_time_alternative": round(total_time_alternative, 2) if total_time_alternative != float('inf') else None,
