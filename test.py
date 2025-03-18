@@ -36,6 +36,12 @@ def find_path():
         max_kerb_slope_side2 = os.path.join(BASE_PATH, 'diagonal_table_Side2_maxkerbslope.csv')
         tactile_paving_side1 = os.path.join(BASE_PATH, 'diagonal_table_Side1_tactilepaving.csv')
         tactile_paving_side2 = os.path.join(BASE_PATH, 'diagonal_table_Side2_tactilepaving.csv')
+        # Read the accessibility standards CSV file
+        AccessibilityStandards_df = pd.read_csv("/Users/kkase/Desktop/AccessibilityStandards.csv",
+                                                dtype={"Min_Pavement_Width": float, "Max_Horizontal_Slope": float,
+                                                       "Max_Kerb_Slope": float})
+        AccessibilityStandards_df.set_index("Parameter", inplace=True)  # Set the index
+        AccessibilityStandards_df.index = AccessibilityStandards_df.index.str.strip()  # Remove extra spaces
 
         # Set accessibility file paths based on the mode
         if mode == 'pedestrian':
@@ -65,6 +71,14 @@ def find_path():
         Max_kerb_slope_side2 = np.loadtxt(max_kerb_slope_side2, delimiter=',', skiprows=1)
         Tactile_paving_side1 = np.loadtxt(tactile_paving_side1, delimiter=',', skiprows=1, dtype=str)
         Tactile_paving_side2 = np.loadtxt(tactile_paving_side2, delimiter=',', skiprows=1, dtype=str)
+
+        # Extract the values from the DataFrame
+        Min_Pavement_Width = AccessibilityStandards_df.loc["Min_Pavement_Width", "Value"]
+        Max_Horizontal_Slope = AccessibilityStandards_df.loc["Max_Horizontal_Slope", "Value"]
+        Max_Kerb_Slope = AccessibilityStandards_df.loc["Max_Kerb_Slope", "Value"]
+        Kerb_Requirement = AccessibilityStandards_df.loc["Kerb_Requirement", "Value"].strip().lower()
+        Tactile_Paving_Requirement = str(
+        AccessibilityStandards_df.loc["Tactile_Paving_Requirement", "Visually_Impaired"]).strip().lower()
 
         # Handle invalid values in accessibility matrices
         A_classification_side1 = np.nan_to_num(A_classification_side1, nan=0, posinf=0, neginf=0)
@@ -276,27 +290,29 @@ def find_path():
 
                 # Check min_pavement_width for all modes
                 if mode == 'mobilityImpaired':
-                    if Min_pavement_width_side1[i - 1, j - 1] < 150 and Min_pavement_width_side2[i - 1, j - 1] < 150:
-                        reasons.append("Στένωση πεζοδρομίου - Narrow Pavement")
+                    if Min_pavement_width_side1[i - 1, j - 1] < Min_Pavement_Width and Min_pavement_width_side2[
+                        i - 1, j - 1] < Min_Pavement_Width:
+                        reasons.append("narrowPavement")
                 elif mode in ['visuallyImpaired', 'pedestrian']:
                     if Min_pavement_width_side1[i - 1, j - 1] <= 0 and Min_pavement_width_side2[i - 1, j - 1] <= 0:
-                        reasons.append("Απουσία πεζοδρομίου - No Pavement")
+                        reasons.append("NoPavement")
 
                 # Check horizontal_slope, kerb, and max_kerb_slope only for mobilityImpaired
                 if mode == 'mobilityImpaired':
-                    if Horizontal_slope_side1[i - 1, j - 1] >= 12 and Horizontal_slope_side2[i - 1, j - 1] >= 12:
-                        reasons.append("Απότομη κατά μήκος κλίση - Steep Horizontal Slope")
-                    if Kerb_side1[i - 1, j - 1].strip().lower() != "yes" and Kerb_side2[
-                        i - 1, j - 1].strip().lower() != "yes":
-                        reasons.append("Δεν υπάρχει ράμπα - No Dropped Kerb")
-                    if Max_kerb_slope_side1[i - 1, j - 1] >= 5 and Max_kerb_slope_side2[i - 1, j - 1] >= 5:
-                        reasons.append("Απότομη κλίση ράμπας - High Kerb Slope")
+                    if Horizontal_slope_side1[i - 1, j - 1] >= Max_Horizontal_Slope and Horizontal_slope_side2[i - 1, j - 1] >= Max_Horizontal_Slope:
+                        reasons.append("SteepHorizontalSlope")
+                    if Kerb_side1[i - 1, j - 1].strip().lower() != Kerb_Requirement and Kerb_side2[
+                        i - 1, j - 1].strip().lower() != Kerb_Requirement:
+                        reasons.append("NoDroppedKerb")
+                    if Max_kerb_slope_side1[i - 1, j - 1] >= Max_Kerb_Slope and Max_kerb_slope_side2[
+                        i - 1, j - 1] >= Max_Kerb_Slope:
+                        reasons.append("HighKerbSlope")
 
                 # Check tactile paving only for visuallyImpaired
                 if mode == 'visuallyImpaired':
-                    if Tactile_paving_side1[i - 1, j - 1].strip().lower() != "yes" and Tactile_paving_side2[
-                        i - 1, j - 1].strip().lower() != "yes":
-                        reasons.append("Απουσία Απτικής Επίστρωσης - No Tactile Paving")
+                    if Tactile_paving_side1[i - 1, j - 1].strip().lower() != Tactile_Paving_Requirement and \
+                            Tactile_paving_side2[i - 1, j - 1].strip().lower() != Tactile_Paving_Requirement:
+                        reasons.append("NoTactilePaving")
 
                 # Use a string key instead of a tuple
                 obstacles[f"{i}-{j}"] = reasons  # Store obstacles for this edge

@@ -1,0 +1,6 @@
+Parameter,Physically_Able,Mobility_Impaired,Visually_Impaired,
+Min_Pavement_Width,0,150,0,
+Max_Horizontal_Slope,,12,,
+Kerb_Requirement,,Yes,,
+Max_Kerb_Slope,,5,,
+Tactile_Paving_Requirement,,,Yes,
