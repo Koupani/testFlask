@@ -78,7 +78,6 @@ def find_path():
 
         # Combine accessibility matrices
         combined_accessibility = np.maximum(A_classification_side1, A_classification_side2)
-
         # Ensure shapes match
         if D.shape != A_classification_side1.shape or D.shape != A_classification_side2.shape:
             raise ValueError("Distances matrix and Accessibility matrix dimensions must match.")
